@@ -1,26 +1,53 @@
 'use client'
+
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import type { MenuItem } from '@/lib/types'
 import { useCart } from '@/lib/store/cart'
+import { liffInitAndGetProfile } from '../liff-client'
 
 export default function MenuPage() {
   const [menus, setMenus] = useState<MenuItem[]>([])
-  const add = useCart(s => s.add)
-  const totalQty = useCart(s => s.lines.reduce((a,b)=>a+b.qty,0))
+  const [loading, setLoading] = useState(true)
+  const add = useCart((s) => s.addLine)
 
   useEffect(() => {
-    fetch('/api/menus').then(r=>r.json()).then(d=>setMenus(d.menus || []))
+    ;(async () => {
+      // init LIFF (login if needed) — เก็บ uid/displayName ไว้ใน sessionStorage
+      try {
+        const profile = await liffInitAndGetProfile()
+        if (profile?.userId) {
+          sessionStorage.setItem('tp-uid', profile.userId)
+          sessionStorage.setItem('tp-displayName', profile.displayName || '')
+        }
+      } catch (err) {
+        console.warn('LIFF init error', err)
+      }
+
+      const r = await fetch('/api/menus')
+      const d = await r.json()
+      setMenus(d.menus || [])
+      setLoading(false)
+    })()
   }, [])
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">เมนูวันนี้</h1>
+    <main className="space-y-4">
+      <h1 className="text-2xl font-bold">เมนูร้านตั้มพานิช</h1>
+      {loading && <div>กำลังโหลดเมนู...</div>}
       <div className="grid grid-cols-2 gap-3">
-        {menus.map(m => (
+        {menus.map((m) => (
           <div key={m.id} className="rounded-xl border p-3">
-            {m.imageUrl && (
-              <Image src={m.imageUrl} alt={m.name} width={400} height={300} className="rounded-lg" />
+            {m.imageUrl ? (
+              <Image
+                src={m.imageUrl}
+                alt={m.name}
+                width={600}
+                height={400}
+                className="rounded-lg aspect-video object-cover"
+              />
+            ) : (
+              <div className="aspect-video rounded-lg bg-gray-100" />
             )}
             <div className="mt-2 font-semibold">{m.name}</div>
             <div className="text-sm text-gray-500">฿{m.price}</div>
@@ -34,12 +61,9 @@ export default function MenuPage() {
         ))}
       </div>
 
-      <a
-        href="/cart"
-        className="fixed bottom-4 right-4 bg-black text-white px-4 py-2 rounded-full shadow-lg"
-      >
-        ตะกร้า ({totalQty})
+      <a href="/cart" className="fixed bottom-4 right-4 bg-black text-white px-4 py-2 rounded-full shadow">
+        ตะกร้า
       </a>
-    </div>
+    </main>
   )
 }
