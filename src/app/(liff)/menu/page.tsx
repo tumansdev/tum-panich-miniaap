@@ -9,25 +9,31 @@ import { liffInitAndGetProfile } from '../liff-client'
 export default function MenuPage() {
   const [menus, setMenus] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const add = useCart((s) => s.addLine)
 
   useEffect(() => {
     ;(async () => {
-      // init LIFF (login if needed) — เก็บ uid/displayName ไว้ใน sessionStorage
       try {
         const profile = await liffInitAndGetProfile()
         if (profile?.userId) {
           sessionStorage.setItem('tp-uid', profile.userId)
           sessionStorage.setItem('tp-displayName', profile.displayName || '')
         }
-      } catch (err) {
-        console.warn('LIFF init error', err)
-      }
 
-      const r = await fetch('/api/menus')
-      const d = await r.json()
-      setMenus(d.menus || [])
-      setLoading(false)
+        const r = await fetch('/api/menus')
+        if (!r.ok) {
+          setError(`โหลดเมนูไม่สำเร็จ (${r.status})`)
+          setLoading(false)
+          return
+        }
+        const d = await r.json()
+        setMenus(d.menus || [])
+      } catch (e: any) {
+        setError(e?.message || 'เกิดข้อผิดพลาด')
+      } finally {
+        setLoading(false)
+      }
     })()
   }, [])
 
@@ -35,6 +41,8 @@ export default function MenuPage() {
     <main className="space-y-4">
       <h1 className="text-2xl font-bold">เมนูร้านตั้มพานิช</h1>
       {loading && <div>กำลังโหลดเมนู...</div>}
+      {error && <div className="text-red-600">⚠ {error}</div>}
+
       <div className="grid grid-cols-2 gap-3">
         {menus.map((m) => (
           <div key={m.id} className="rounded-xl border p-3">
