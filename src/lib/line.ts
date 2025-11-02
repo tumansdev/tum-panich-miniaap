@@ -1,5 +1,10 @@
 // src/lib/line.ts
-import { Client, middleware, validateSignature, type MiddlewareConfig } from '@line/bot-sdk'
+import {
+  Client,
+  middleware,
+  validateSignature,
+  type MiddlewareConfig,
+} from '@line/bot-sdk'
 
 export function getLineConfig(): MiddlewareConfig {
   const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN
@@ -9,16 +14,24 @@ export function getLineConfig(): MiddlewareConfig {
   return { channelAccessToken, channelSecret }
 }
 
-// ใช้เฉพาะตอนต้องส่งข้อความ/ดึง media
 export function getLineClient(): Client {
   const { channelAccessToken } = getLineConfig()
   return new Client({ channelAccessToken })
 }
 
-// (ใช้เฉพาะเมื่อต้องแนบเป็น Express-style middleware; ใน Next เราไม่ค่อยได้ใช้ตัวนี้)
 export function getLineMiddleware() {
   return middleware(getLineConfig())
 }
 
-// ให้ route อื่นนำไปใช้ validate signature ได้
 export { validateSignature }
+
+/** ดึงไฟล์ media (เช่น สลิป) จาก messageId แล้วรวม stream เป็น Buffer */
+export async function getMessageContent(messageId: string): Promise<Buffer> {
+  const client = getLineClient()
+  const stream = await client.getMessageContent(messageId)
+  const chunks: Buffer[] = []
+  for await (const c of stream as AsyncIterable<Uint8Array>) {
+    chunks.push(Buffer.from(c))
+  }
+  return Buffer.concat(chunks)
+}
