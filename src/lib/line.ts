@@ -3,10 +3,10 @@ import {
   Client,
   middleware,
   validateSignature,
-  type MiddlewareConfig,
 } from '@line/bot-sdk'
 
-export function getLineConfig(): MiddlewareConfig {
+// ให้ฟังก์ชันนี้คืนค่าเป็น string ล้วน เพื่อตัด union | undefined ออก
+export function getLineConfig(): { channelAccessToken: string; channelSecret: string } {
   const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN
   const channelSecret = process.env.LINE_CHANNEL_SECRET
   if (!channelAccessToken) throw new Error('LINE_CHANNEL_ACCESS_TOKEN is not set')
