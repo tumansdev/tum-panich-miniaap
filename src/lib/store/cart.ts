@@ -1,6 +1,6 @@
 'use client'
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { CartLine } from '@/lib/types'
 
 type CartState = {
@@ -40,10 +40,16 @@ export const useCart = create<CartState>()(
         }
         set({ lines: cur })
       },
-      remove: (menuId) => set({ lines: get().lines.filter((l) => l.menuId !== menuId) }),
+      remove: (menuId) =>
+        set({ lines: get().lines.filter((l) => l.menuId !== menuId) }),
       clear: () => set({ lines: [] }),
       total: () => get().lines.reduce((s, l) => s + l.price * l.qty, 0),
     }),
-    { name: 'tp-cart', getStorage: () => sessionStorage }
+    {
+      name: 'tp-cart',
+      storage: createJSONStorage(() => sessionStorage),
+      // หากต้องการข้ามการ persist บาง field ก็ใช้ partialize ได้ เช่น:
+      // partialize: (state) => ({ lines: state.lines }),
+    }
   )
 )
