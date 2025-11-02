@@ -19,7 +19,7 @@ export function orderSummaryFlex(opts: {
   total: number
   shopName: string
 }): FlexMessage {
-  // ใช้ any[] กัน TS ชนเวลา spread ...items (เพราะ @line/bot-sdk ใช้ literal types เข้มมาก)
+  // ใช้ any[] เพื่อหลีกชน type literal ของ @line/bot-sdk ตอน spread
   const items: any[] = opts.lines.map((l) => ({
     type: 'box' as const,
     layout: 'horizontal' as const,
@@ -49,7 +49,7 @@ export function orderSummaryFlex(opts: {
           { type: 'text', text: opts.shopName, weight: 'bold', size: 'lg' },
           { type: 'text', text: `ออเดอร์ของคุณ ${opts.uid}`, size: 'sm', color: '#6b7280' },
           { type: 'separator' },
-          // @ts-ignore — items ถูกพิมพ์เป็น any[] เพื่อให้ spread ได้โดยไม่ชน FlexComponent
+          // @ts-ignore: items typed as any[] เพื่อให้ spread ได้
           ...items,
           { type: 'separator' },
           {
@@ -93,12 +93,13 @@ export function orderSummaryFlex(opts: {
           },
         ],
       },
-      quickReply: {
-        items: [
-          { type: 'action', action: { type: 'camera', label: 'ถ่ายสลิป' } },
-          { type: 'action', action: { type: 'cameraRoll', label: 'อัปโหลดสลิป' } },
-        ],
-      },
+    },
+    // ✅ quickReply ต้องอยู่ระดับ FlexMessage (ไม่ใช่ใน bubble)
+    quickReply: {
+      items: [
+        { type: 'action', action: { type: 'camera', label: 'ถ่ายสลิป' } },
+        { type: 'action', action: { type: 'cameraRoll', label: 'อัปโหลดสลิป' } },
+      ],
     },
   }
 
@@ -190,8 +191,9 @@ export function deliveryFormFlex(orderId: string, method: DeliveryMethod): FlexM
           },
         ],
       },
-      quickReply: { items: [{ type: 'action', action: { type: 'location', label: 'แชร์ตำแหน่ง' } }] },
     },
+    // ✅ quickReply อยู่ระดับ message
+    quickReply: { items: [{ type: 'action', action: { type: 'location', label: 'แชร์ตำแหน่ง' } }] },
   }
 }
 
@@ -257,7 +259,7 @@ export function receiptFlex(order: Order, slogan: string): FlexMessage {
         layout: 'vertical',
         spacing: 'sm',
         contents: [
-          // @ts-ignore — อธิบายเหมือนด้านบน
+          // @ts-ignore — spread literal box list
           ...lines,
           { type: 'separator' },
           {
@@ -268,7 +270,6 @@ export function receiptFlex(order: Order, slogan: string): FlexMessage {
               { type: 'text', text: fmtTHB(order.total), align: 'end', weight: 'bold' },
             ],
           },
-          // แนบสลิปถ้ามี
           ...(order.slipUrl ? ([{ type: 'image', url: order.slipUrl, size: 'full' }] as any) : []),
         ],
       },
