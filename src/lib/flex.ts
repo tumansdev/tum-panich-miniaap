@@ -7,7 +7,6 @@ export function fmtTHB(n: number) {
 }
 
 function publicUrl(path: string) {
-  // ใช้ BASE_URL ถ้ามี (production), ไม่งั้นให้ใช้ path แบบ /qr-payment.png
   const base = process.env.BASE_URL?.replace(/\/$/, '')
   return base ? `${base}${path}` : path
 }
@@ -20,16 +19,17 @@ export function orderSummaryFlex(opts: {
   total: number
   shopName: string
 }): FlexMessage {
-  const items = opts.lines.map((l) => ({
+  // ใช้ any[] กัน TS ชนเวลา spread ...items (เพราะ @line/bot-sdk ใช้ literal types เข้มมาก)
+  const items: any[] = opts.lines.map((l) => ({
     type: 'box' as const,
-  layout: 'horizontal' as const,
-  contents: [
-    { type: 'text' as const, text: `${l.name} x${l.qty}`, size: 'sm', color: '#111', flex: 3 },
-    { type: 'text' as const, text: fmtTHB(l.price * l.qty), size: 'sm', align: 'end', flex: 1 },
-  ],
+    layout: 'horizontal' as const,
+    contents: [
+      { type: 'text' as const, text: `${l.name} x${l.qty}`, size: 'sm' as const, color: '#111', flex: 3 },
+      { type: 'text' as const, text: fmtTHB(l.price * l.qty), size: 'sm' as const, align: 'end' as const, flex: 1 },
+    ],
   }))
 
-  return {
+  const message: FlexMessage = {
     type: 'flex',
     altText: `สรุปออเดอร์ #${opts.orderId}`,
     contents: {
@@ -49,6 +49,7 @@ export function orderSummaryFlex(opts: {
           { type: 'text', text: opts.shopName, weight: 'bold', size: 'lg' },
           { type: 'text', text: `ออเดอร์ของคุณ ${opts.uid}`, size: 'sm', color: '#6b7280' },
           { type: 'separator' },
+          // @ts-ignore — items ถูกพิมพ์เป็น any[] เพื่อให้ spread ได้โดยไม่ชน FlexComponent
           ...items,
           { type: 'separator' },
           {
@@ -100,6 +101,8 @@ export function orderSummaryFlex(opts: {
       },
     },
   }
+
+  return message
 }
 
 /** ---------- 2) เลือกวิธีจัดส่ง ---------- */
@@ -227,6 +230,15 @@ export function distanceResultFlex(km: number): FlexMessage {
 
 /** ---------- 5) ใบเสร็จ (หลังปิดจ๊อบ) ---------- */
 export function receiptFlex(order: Order, slogan: string): FlexMessage {
+  const lines: any[] = order.lines.map((l) => ({
+    type: 'box' as const,
+    layout: 'horizontal' as const,
+    contents: [
+      { type: 'text' as const, text: `${l.name} x${l.qty}`, size: 'sm' as const, flex: 3 },
+      { type: 'text' as const, text: fmtTHB(l.qty * l.price), size: 'sm' as const, align: 'end' as const, flex: 1 },
+    ],
+  }))
+
   return {
     type: 'flex',
     altText: `ใบเสร็จ #${order.id}`,
@@ -245,14 +257,8 @@ export function receiptFlex(order: Order, slogan: string): FlexMessage {
         layout: 'vertical',
         spacing: 'sm',
         contents: [
-          ...order.lines.map((l) => ({
-            type: 'box',
-            layout: 'horizontal',
-            contents: [
-              { type: 'text', text: `${l.name} x${l.qty}`, size: 'sm', flex: 3 },
-              { type: 'text', text: fmtTHB(l.qty * l.price), size: 'sm', align: 'end', flex: 1 },
-            ],
-          })),
+          // @ts-ignore — อธิบายเหมือนด้านบน
+          ...lines,
           { type: 'separator' },
           {
             type: 'box',
@@ -262,6 +268,7 @@ export function receiptFlex(order: Order, slogan: string): FlexMessage {
               { type: 'text', text: fmtTHB(order.total), align: 'end', weight: 'bold' },
             ],
           },
+          // แนบสลิปถ้ามี
           ...(order.slipUrl ? ([{ type: 'image', url: order.slipUrl, size: 'full' }] as any) : []),
         ],
       },
