@@ -21,12 +21,12 @@ export function orderSummaryFlex(opts: {
   shopName: string
 }): FlexMessage {
   const items = opts.lines.map((l) => ({
-    type: 'box',
-    layout: 'horizontal',
-    contents: [
-      { type: 'text', text: `${l.name} x${l.qty}`, size: 'sm', color: '#111', flex: 3 },
-      { type: 'text', text: fmtTHB(l.price * l.qty), size: 'sm', align: 'end', flex: 1 },
-    ],
+    type: 'box' as const,
+  layout: 'horizontal' as const,
+  contents: [
+    { type: 'text' as const, text: `${l.name} x${l.qty}`, size: 'sm', color: '#111', flex: 3 },
+    { type: 'text' as const, text: fmtTHB(l.price * l.qty), size: 'sm', align: 'end', flex: 1 },
+  ],
   }))
 
   return {
